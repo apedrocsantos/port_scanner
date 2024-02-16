@@ -3,9 +3,14 @@ import scan
 import report
 import globals
 import argparse
+from datetime import datetime
+
+# Data e hora / api com nome e link da vulnerabilidade / report / print lista no terminal
 
 def main():
-    port = ""
+    array = []
+    # current_time = datetime.now()
+    # array.append({"start time": str(current_time.date()) + " " + str(current_time.hour) + ":" + str(current_time.minute) + ":" + str(current_time.second)})
     parser = argparse.ArgumentParser(description="Port Scanner")
     parser.add_argument("-p", "--port", default="0-1023")
     parser.add_argument("-v", action='store_true')
@@ -24,8 +29,7 @@ def main():
     if (parsing.check_valid_port(input_port, port_list)):
         print("Invalid port values. Try again.")
         exit()
-    matrix = [["IP","NAME","PORT","SERVCE","CVE"]]
-    scan.scan_network(ip_list, port_list, matrix)
+    scan.scan_network(ip_list, port_list, array)
     print("Done")
     # if input("Create report? y/n: ") == "y":
     #     report.create_report(matrix)

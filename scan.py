@@ -11,61 +11,57 @@ def scan_port(target, port):
 	except Exception:
 		return False
 
-
-# result [IP][NOME][PORTO][SERVIÇO][CVE]
-
-# IP
-#     NOME
-#     PORTO 1
-#     	SERVICO
-#       VERSAO
-#       CVES
-#       	CVE2
-#           CVE1
-#       PORTO 2
-#       ...
-
-def get_service(scanner, ip, port, matrix):
+def get_service(scanner, ip, port, name, array):
 	dic = scanner.scan(ip, arguments="-sV -p " + str(port))
-	print("port " + str(port) + " : " + dic["scan"][ip]["tcp"][port]["product"] + " v" + dic["scan"][ip]["tcp"][port]["version"])
-
-def get_vulns(scanner, ip, port, matrix):
-	dic = scanner.scan(ip, arguments="--script vuln -p " + str(port))
-	for val in dic["scan"][ip]["tcp"][port]["script"]:
-		if "CVE:" in dic["scan"][ip]["tcp"][port]["script"][val]:
-			spos = dic["scan"][ip]["tcp"][port]["script"][val].find("CVE:") + 4
-			epos = dic["scan"][ip]["tcp"][port]["script"][val][spos:].find("\n")
-			print(dic["scan"][ip]["tcp"][port]["script"][val][spos:spos+epos])
+	service = dic["scan"][ip]["tcp"][port]["name"]
+	version = dic["scan"][ip]["tcp"][port]["product"] + " v" + dic["scan"][ip]["tcp"][port]["version"]
+	print("port " + str(port) + " : " + service + " : " + version)
+	#add dictionary to list
+	for item in array:
+		print(item)
+		if item["ip"] == ip:
+			array.append({"service" : service, "version" : version, "port" : {port : []}})
 	
 
-def scan_network(ip_list, port_list, matrix):
-	array = []
-	result = ["" for x in range(5)]
+def get_vulns(scanner, ip, port, array):
+	dic = scanner.scan(ip, arguments="--script vuln -p " + str(port))
+	try:
+		for val in dic["scan"][ip]["tcp"][port]["script"]:
+			if "CVE-" in dic["scan"][ip]["tcp"][port]["script"][val]:
+				spos = dic["scan"][ip]["tcp"][port]["script"][val].find("CVE-")
+				if (dic["scan"][ip]["tcp"][port]["script"][val][spos:].find("\n") < dic["scan"][ip]["tcp"][port]["script"][val][spos:].find(" ")):
+					epos = dic["scan"][ip]["tcp"][port]["script"][val][spos:].find("\n")
+				else:
+					epos = dic["scan"][ip]["tcp"][port]["script"][val][spos:].find(" ")
+				cve = dic["scan"][ip]["tcp"][port]["script"][val][spos:spos+epos]
+				for item in array:
+					if item["ip"] == ip:
+						item["port"][port].append(cve)
+	except Exception:
+		i = 0
+	
+
+def scan_network(ip_list, port_list, array):
 	scanner = nmap.PortScanner()
-	i = 0
 	for ip in ip_list:
-		result[0] = ip
 		closed = 1
 		try:
-			print("Host: ", socket.gethostbyaddr(ip)[0])
-			result[1] = socket.gethostbyaddr(ip_list[0])[0]
+			name = socket.gethostbyaddr(ip_list[0])[0]
+			print("Host: ", name)
 		except Exception:
 			print(ip, ": no host name found.")
-			result[1] = ("empty")
+			name = "empty"
 		for port in port_list:
+			array.append({"ip" : ip, "host" : name})
 			#If port is open
 			if scan_port(ip, port):
-				#add dictionary to list
-				# print("port", port, "is open.")
-				get_service(scanner, ip, port, matrix)
+				get_service(scanner, ip, port, name, array)
 				closed = 0
-				# input("scan vulns? y/n ")
-				#Find CVEs
-				# get_vulns(scanner, ip, port, matrix)
+				if input("Scan for vulnerabilities? y/n: ") == "y":
+					#Find CVEs
+					get_vulns(scanner, ip, port, array)
 			elif globals.verbose:
 				print("port", port, "is closed.")
-				result[2] = port
-				matrix.append(result[:])
 		if closed:
 			print(ip, ": all probed ports are closed.")
-		i += 1
+	print(array)
