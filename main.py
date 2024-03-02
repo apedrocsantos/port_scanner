@@ -3,14 +3,8 @@ import scan
 import report
 import globals
 import argparse
-import os
 from datetime import datetime
 import netifaces
-
-# report / print lista no terminal
-
-def print_screen(array):
-    print("Done")
 
 def basic(device):
     try:
@@ -49,8 +43,6 @@ def main():
     start_time = str(current_time.date()) + " " + str(current_time.hour) + ":" + str(current_time.minute) + ":" + str(current_time.second)
     print("Starting:", start_time)
     scan.scan_network(ip_list, port_list, array)
-    print(array)
-    # print_screen(array)
     if input("Create report? y/n: ") == "y":
         report.create_report(array, start_time)
     print ("Done")

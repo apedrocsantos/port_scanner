@@ -66,8 +66,5 @@ def check_valid_ip(string, ip_list):
                 return (1)
         elif check_ip(temp[i], ip_list):
             return (1)
-        # else:
-        #     print("Appending ", string)
-        #     ip_list.append(string)
         i += 1
     return (0)

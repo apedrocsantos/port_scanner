@@ -1,35 +1,44 @@
-from reportlab.lib import colors
-from reportlab.pdfgen import canvas
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.pagesizes import A4
+from datetime import datetime
 import requests
-from http.client import HTTPResponse
-import mimetypes
 
-# def create_report(array, start_time):
-#     doc = SimpleDocTemplate('myfile.pdf', pagesize=A4)
-#     elements = []
-#     print("report:", array)
-#     myCanvas=Table(array)
-#     # myCanvas.setStyle(TableStyle([('BACKGROUND',(1,1),(-2,-2),colors.green),
-#     #                     ('TEXTCOLOR',(0,0),(1,-1),colors.red)]))
-#     elements.append(myCanvas)
-#     doc.build(elements)
+def get_cve_url(cve):
+	cve_url = "https://nvd.nist.gov/vuln/detail/" + cve
+	url_response = requests.get(cve_url)
+	if (url_response.status_code == 200):
+		return(cve_url)
+	else:
+		return ("not found")
 
 def create_report(array, start_time):
-    cm = 2.541
-    # response = HTTPResponse(mimetype='application/pdf')
-    response = 'attachment; filename=somefilename.pdf'
+	cm = 2.541
 
-    elements = []
+	doc = SimpleDocTemplate('myfile.pdf', pagesize=A4)
+	content = []
+	styles = getSampleStyleSheet()
 
-    doc = SimpleDocTemplate('myfile.pdf', pagesize=A4)
-
-    data=[("IP\nHostname", "Open Port", "Service/version", "Vulnerabilities", "Description", "Website")]
-    # for item in array:
-    #     for subitem in item:
-    #         print (subitem)
-    table = Table(data)
-    elements.append(table)
-    doc.build(elements) 
-    return response
+	st = "Start time: " + start_time
+	content.append(Paragraph(st))
+	for element in array:
+		content.append(Paragraph("++++++++++++++++++"))
+		ip = element["ip"]
+		hostname = element["host"]
+		ip_id = "IP: " + ip + " | Hostname: " + hostname
+		content.append(Paragraph(ip_id))
+		for port_dict in element['port']:
+			for port in port_dict:
+				for port_list in port_dict[port]:
+					content.append(Paragraph("++++++++++++++++++"))
+					string = "Port: " + str(port) + " | Service: " + port_list["service"] + " | Version: " + port_list["version"]
+					content.append(Paragraph(string))
+					for cve in port_list["CVE_list"]:
+						cve_data = cve["CVE"] + " (" + get_cve_url(cve["CVE"]) + ")"
+						content.append(Paragraph(cve_data))
+	content.append(Paragraph("++++++++++++++++++"))
+	current_time = datetime.now()
+	end_time = str(current_time.date()) + " " + str(current_time.hour) + ":" + str(current_time.minute) + ":" + str(current_time.second)
+	et = "End time: " + end_time
+	content.append(Paragraph(et))
+	doc.build(content)
