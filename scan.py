@@ -16,12 +16,13 @@ def get_service(scanner, ip, port, name, array):
 	service = dic["scan"][ip]["tcp"][port]["name"]
 	version = dic["scan"][ip]["tcp"][port]["product"] + " " + dic["scan"][ip]["tcp"][port]["version"]
 	print("port " + str(port) + " : " + service + " : " + version)
-	#add port to list
+	# Adicionar porto à lista
 	for item in array:
 		if item["ip"] == ip:
 			item["port"].append({port : [{"CVE_list": [], "service" : service, "version" : version}]})
 
 def get_vulns(scanner, ip, port, array):
+	# Usa o script vulners do nmap para pesquisar vulnerabilidades
 	dic = scanner.scan(ip, arguments="-sV --script vulners -p " + str(port))
 	epos = 0
 	spos = 0
@@ -42,9 +43,11 @@ def get_vulns(scanner, ip, port, array):
 			else:
 				epos = epos + spos + 1
 			cve = line[spos + 1:epos]
+			# Printa vulnerabilidade no écrã
 			print(ip + "\t" + str(port) + "\t" + cve)
 			epos = line[epos:].find('\n') + epos
 			spos = epos
+			# Adiciona vulnerabilidade ao dicionário
 			for item in array:
 				if item["ip"] == ip:
 					for port_l in item["port"]:
@@ -67,10 +70,10 @@ def scan_network(ip_list, port_list, array):
 			print("Scanning " + ip, ": no host name found.")
 			name = "empty"
 		array.append({"ip" : ip, "host" : name, "port" : []})
-		# print(array)
+		# Scan às portas
 		for port in port_list:
-			#If port is open
 			if scan_port(ip, port):
+				# Procurar serviço do porto
 				get_service(scanner, ip, port, name, array)
 				closed = 0
 			elif globals.verbose:
@@ -78,8 +81,8 @@ def scan_network(ip_list, port_list, array):
 		if closed:
 			print(ip, ": all probed ports are closed.")
 	print("**********************************************")
+	# Fazer scan vulnerabilidades (y/n)
 	if input("Scan for vulnerabilities? y/n: ") == "y":
-		# Find CVEs
 		for item in array:
 			for port_s in item["port"]:
 				for key in port_s:
